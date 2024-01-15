@@ -1,5 +1,6 @@
 from pacman.Ghost import Ghosts
 from pacman.Pacman import RandomPacman
+from pacman.BenioPacman import BenioPacman
 from pacman.Game import Game
 
 board = ["*   g",
@@ -42,5 +43,5 @@ board_big = ["wwwwwwwwwwwwwwwwwwwwwwwwwwww",
 
 while True:
     game = Game(board_big, [Ghosts.RED, Ghosts.PINK, Ghosts.BLUE, Ghosts.ORANGE],
-                [RandomPacman(), RandomPacman(), RandomPacman(), RandomPacman()], False)
+                [RandomPacman(), RandomPacman(), BenioPacman(), RandomPacman()], True)
     print(game.run())
