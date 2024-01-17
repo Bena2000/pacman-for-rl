@@ -38,14 +38,26 @@ class BenioPacman(Pacman):
         if self.print_status:
             print("Benio pacman won")
 
-    def check_if_ghost_on_position(self, game_state, position: Position):
+    def find_closest_ghost(self, game_state: GameState, position: Position):
+        ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
+        closest_ghost = game_state.ghosts[0]
+        min_distance = manhattan_distance(position, ghosts_positions[0])
+        for idx, ghosts_position in enumerate(ghosts_positions):
+            distance = manhattan_distance(position, ghosts_position)
+            if distance < min_distance:
+                min_distance = distance
+                closest_ghost = game_state.ghosts[idx]
+        return closest_ghost, min_distance
+
+
+    def check_if_ghost_in_position(self, game_state, position: Position):
         ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
 
         if position in ghosts_positions:
             return True
         return False
 
-    def check_if_ghost_radius_on_position(self, game_state, position: Position, radius = 3):
+    def check_if_ghost_radius_in_position(self, game_state, position: Position, radius = 3):
         ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
 
         for ghosts_position in ghosts_positions:
@@ -103,7 +115,7 @@ class BenioPacman(Pacman):
         return closest_point
 
     def search_to_position_BFS(self, game_state: GameState, start_position: Position, end_position: Position):
-        if end_position is None or self.check_if_ghost_on_position(game_state, end_position):
+        if end_position is None or self.check_if_ghost_in_position(game_state, end_position):
             return None
 
         queue = Queue()
@@ -112,8 +124,8 @@ class BenioPacman(Pacman):
 
         while not queue.isEmpty():
             current_position, steps = queue.pop()
-            if len(steps) < 3 and self.check_if_ghost_radius_on_position(game_state, current_position):
-                continue
+            # if len(steps) < 3 and self.check_if_ghost_radius_in_position(game_state, current_position):
+            #     continue
             if current_position not in visitedNodes:
                 visitedNodes.append(current_position)
 
@@ -132,11 +144,8 @@ class BenioPacman(Pacman):
         closest_double_point = self.closest_element_in_set(game_state.double_points, pacman_position)
         closest_point = self.closest_element_in_set(game_state.points, pacman_position)
 
-        move = self.search_to_position_BFS(game_state, pacman_position, closest_big_point)
-        if move is None:
-            move = self.search_to_position_BFS(game_state, pacman_position, closest_double_point)
-            if move is None:
-                move = self.search_to_position_BFS(game_state, pacman_position, closest_point)
+        move_big = self.search_to_position_BFS(game_state, pacman_position, closest_big_point)
+        move_double = self.search_to_position_BFS(game_state, pacman_position, closest_double_point)
+        move = self.search_to_position_BFS(game_state, pacman_position, closest_point)
 
-        # move = self.search_to_position_BFS(game_state, pacman_position, target)
         return move if move is not None else random.choice(list(Direction))

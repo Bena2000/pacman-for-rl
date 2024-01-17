@@ -1,6 +1,8 @@
 from pacman.Ghost import Ghosts
 from pacman.Pacman import RandomPacman
 from pacman.BenioPacman import BenioPacman
+from pacman.BenioPacmanMinimax import BenioPacmanMinimax
+from pacman.BenioPacmanReflex import BenioPacmanReflex
 from pacman.Game import Game
 
 board = ["*   g",
