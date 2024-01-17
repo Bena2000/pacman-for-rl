@@ -8,23 +8,16 @@ from .Position import Position
 from .GameState import GameState
 
 class Queue:
-    "A container with a first-in-first-out (FIFO) queuing policy."
     def __init__(self):
         self.list = []
 
     def push(self,item):
-        "Enqueue the 'item' into the queue"
         self.list.insert(0,item)
 
     def pop(self):
-        """
-          Dequeue the earliest enqueued item still in the queue. This
-          operation removes the item from the queue.
-        """
         return self.list.pop()
 
     def isEmpty(self):
-        "Returns true if the queue is empty"
         return len(self.list) == 0
 
 def manhattan_distance(point1, point2):
@@ -45,6 +38,21 @@ class BenioPacman(Pacman):
         if self.print_status:
             print("Benio pacman won")
 
+    def check_if_ghost_on_position(self, game_state, position: Position):
+        ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
+
+        if position in ghosts_positions:
+            return True
+        return False
+
+    def check_if_ghost_radius_on_position(self, game_state, position: Position, radius = 3):
+        ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
+
+        for ghosts_position in ghosts_positions:
+            if manhattan_distance(position, ghosts_position) < radius:
+                return True
+        return False
+
     def add_direction_to_position(self, position: Position, direction: Direction)->Position:
         temp_position = deepcopy(position)
         if direction == Direction.UP:
@@ -61,9 +69,9 @@ class BenioPacman(Pacman):
         # next_position: Position = deepcopy(game_state.you['position'])
 
         next_position = self.add_direction_to_position(deepcopy(current_position), move)
-        ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
+        # ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
 
-        if next_position in game_state.walls or next_position in ghosts_positions:
+        if next_position in game_state.walls:
             return False
         return True
 
@@ -80,14 +88,14 @@ class BenioPacman(Pacman):
         return list
 
 
-    def closest_point(self, points: set[Position], pacman_position: Position)->Position|None:
-        if len(points)<=0:
+    def closest_element_in_set(self, elements_set: set[Position], pacman_position: Position)-> Position | None:
+        if len(elements_set)<=0:
             return None
 
-        closest_point: Position =list(points)[0]
+        closest_point: Position =list(elements_set)[0]
         closest_point_distance = manhattan_distance(closest_point, pacman_position)
 
-        for point in points:
+        for point in elements_set:
             distance = manhattan_distance(point, pacman_position)
             if distance < closest_point_distance:
                 closest_point = point
@@ -95,12 +103,17 @@ class BenioPacman(Pacman):
         return closest_point
 
     def search_to_position_BFS(self, game_state: GameState, start_position: Position, end_position: Position):
+        if end_position is None or self.check_if_ghost_on_position(game_state, end_position):
+            return None
+
         queue = Queue()
         visitedNodes = []
         queue.push((start_position, []))
 
         while not queue.isEmpty():
             current_position, steps = queue.pop()
+            if len(steps) < 3 and self.check_if_ghost_radius_on_position(game_state, current_position):
+                continue
             if current_position not in visitedNodes:
                 visitedNodes.append(current_position)
 
@@ -110,12 +123,20 @@ class BenioPacman(Pacman):
                 for move_direction in self.get_possible_actions(game_state, current_position):
                     next_position = self.add_direction_to_position(current_position, move_direction)
                     queue.push((next_position, steps + [move_direction]))
-        return random.choice(list(Direction))
+        return None
 
     def make_move(self, game_state: GameState, invalid_move=False) -> Direction:
         pacman_position = game_state.you['position']
-        closest_point = self.closest_point(game_state.points, pacman_position)
-        move = self.search_to_position_BFS(game_state, pacman_position, closest_point)
-        return move
 
+        closest_big_point = self.closest_element_in_set(game_state.big_points, pacman_position)
+        closest_double_point = self.closest_element_in_set(game_state.double_points, pacman_position)
+        closest_point = self.closest_element_in_set(game_state.points, pacman_position)
 
+        move = self.search_to_position_BFS(game_state, pacman_position, closest_big_point)
+        if move is None:
+            move = self.search_to_position_BFS(game_state, pacman_position, closest_double_point)
+            if move is None:
+                move = self.search_to_position_BFS(game_state, pacman_position, closest_point)
+
+        # move = self.search_to_position_BFS(game_state, pacman_position, target)
+        return move if move is not None else random.choice(list(Direction))
