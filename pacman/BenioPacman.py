@@ -38,7 +38,7 @@ class BenioPacman(Pacman):
         if self.print_status:
             print("Benio pacman won")
 
-    def find_closest_ghost(self, game_state: GameState, position: Position):
+    def find_closest_ghost(self, game_state: GameState, position: Position) -> tuple[dict, float]:
         ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
         closest_ghost = game_state.ghosts[0]
         min_distance = manhattan_distance(position, ghosts_positions[0])
@@ -50,14 +50,18 @@ class BenioPacman(Pacman):
         return closest_ghost, min_distance
 
 
-    def check_if_ghost_in_position(self, game_state, position: Position):
+    def check_if_ghost_in_position(self, game_state, position: Position) -> bool:
         ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
 
         if position in ghosts_positions:
             return True
         return False
 
-    def check_if_ghost_radius_in_position(self, game_state, position: Position, radius = 3):
+    def distance_from_nearest_ghost(self, game_state, position: Position) -> float:
+        closest_ghost, distance = self.find_closest_ghost(game_state, position)
+        return distance
+
+    def check_if_ghost_radius_in_position(self, game_state, position: Position, radius = 2) -> bool:
         ghosts_positions = [ghost['position'] for ghost in game_state.ghosts]
 
         for ghosts_position in ghosts_positions:
@@ -65,7 +69,7 @@ class BenioPacman(Pacman):
                 return True
         return False
 
-    def add_direction_to_position(self, position: Position, direction: Direction)->Position:
+    def add_direction_to_position(self, position: Position, direction: Direction) -> Position:
         temp_position = deepcopy(position)
         if direction == Direction.UP:
             temp_position.y -= 1
@@ -114,6 +118,21 @@ class BenioPacman(Pacman):
                 closest_point_distance = distance
         return closest_point
 
+
+    def find_farthest_point_from_ghosts(self, elements_set: set[Position], pacman_position: Position)-> Position | None:
+        if len(elements_set)<=0:
+            return None
+
+        closest_point: Position =list(elements_set)[0]
+        closest_point_distance = manhattan_distance(closest_point, pacman_position)
+
+        for point in elements_set:
+            distance = manhattan_distance(point, pacman_position)
+            if distance > closest_point_distance:
+                closest_point = point
+                closest_point_distance = distance
+        return closest_point
+
     def search_to_position_BFS(self, game_state: GameState, start_position: Position, end_position: Position):
         if end_position is None or self.check_if_ghost_in_position(game_state, end_position):
             return None
@@ -124,7 +143,7 @@ class BenioPacman(Pacman):
 
         while not queue.isEmpty():
             current_position, steps = queue.pop()
-            # if len(steps) < 3 and self.check_if_ghost_radius_in_position(game_state, current_position):
+            # if len(steps) == 1 and self.check_if_ghost_radius_in_position(game_state, current_position, 2):
             #     continue
             if current_position not in visitedNodes:
                 visitedNodes.append(current_position)
@@ -140,12 +159,21 @@ class BenioPacman(Pacman):
     def make_move(self, game_state: GameState, invalid_move=False) -> Direction:
         pacman_position = game_state.you['position']
 
-        closest_big_point = self.closest_element_in_set(game_state.big_points, pacman_position)
-        closest_double_point = self.closest_element_in_set(game_state.double_points, pacman_position)
-        closest_point = self.closest_element_in_set(game_state.points, pacman_position)
+        points = game_state.big_points.union(game_state.double_points).union(game_state.points)
 
-        move_big = self.search_to_position_BFS(game_state, pacman_position, closest_big_point)
-        move_double = self.search_to_position_BFS(game_state, pacman_position, closest_double_point)
+        closest_point = self.closest_element_in_set(points, pacman_position)
         move = self.search_to_position_BFS(game_state, pacman_position, closest_point)
+        next_position = self.add_direction_to_position(pacman_position, move)
 
-        return move if move is not None else random.choice(list(Direction))
+        if self.check_if_ghost_radius_in_position(game_state, next_position, 2):
+            best_move = None
+            ghost_distance = -1
+            for move_direction in self.get_possible_actions(game_state, pacman_position):
+                next_position = self.add_direction_to_position(pacman_position, move_direction)
+                distance_from_ghost = self.distance_from_nearest_ghost(game_state, next_position)
+                if distance_from_ghost > ghost_distance:
+                    ghost_distance = distance_from_ghost
+                    best_move = move_direction
+            return best_move
+
+        return move
