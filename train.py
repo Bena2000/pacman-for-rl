@@ -1,11 +1,22 @@
 from copy import deepcopy
 
 import numpy as np
-
 from pacman.BenioPacmanFunctionValueApproximation import BenioPacmanFunctionValueApproximation
 from pacman.Ghost import Ghosts
 from pacman.Pacman import RandomPacman
 from pacman.Game import Game
+
+class RandomPacman1(RandomPacman):
+    def __init__(self, print_status=True) -> None:
+        super().__init__(print_status)
+
+class RandomPacman2(RandomPacman):
+    def __init__(self, print_status=True) -> None:
+        super().__init__(print_status)
+
+class RandomPacman3(RandomPacman):
+    def __init__(self, print_status=True) -> None:
+        super().__init__(print_status)
 
 board = ["*   g",
          "gwww ",
@@ -47,20 +58,10 @@ board_big = ["wwwwwwwwwwwwwwwwwwwwwwwwwwww",
 
 GHOSTS = [Ghosts.RED, Ghosts.PINK, Ghosts.BLUE, Ghosts.ORANGE]
 
-class RandomPacman1(RandomPacman):
-    def __init__(self, print_status=True) -> None:
-        super().__init__(print_status)
-class RandomPacman2(RandomPacman):
-    def __init__(self, print_status=True) -> None:
-        super().__init__(print_status)
-class RandomPacman3(RandomPacman):
-    def __init__(self, print_status=True) -> None:
-        super().__init__(print_status)
-
 def test(n_games=10):
     stats = {}
     pacmans = [
-        BenioPacmanFunctionValueApproximation(train=False, use_predefined_weights=True),
+        BenioPacmanFunctionValueApproximation(train=True, use_predefined_weights=False),
         RandomPacman1(print_status=False),
         RandomPacman2(print_status=False),
         RandomPacman3(print_status=False)
@@ -72,7 +73,7 @@ def test(n_games=10):
         print(f"Testing #{i + 1}")
         np.random.shuffle(pacmans)
         new_pacmans = deepcopy(pacmans)
-        game = Game(board_big, GHOSTS, new_pacmans, display_mode_on=True, delay=100)
+        game = Game(board_big, GHOSTS, new_pacmans, display_mode_on=False, delay=0)
         end_game = game.run()
         for pacman, value in end_game.items():
             stats[pacman.__class__.__name__].append(value)
@@ -84,4 +85,4 @@ def test(n_games=10):
         print(f"{i + 1}.\t{pacman_name}\t{values}\t{np.mean(values)}")
 
 if __name__ == "__main__":
-    test(10)
+    test()
