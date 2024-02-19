@@ -13,30 +13,31 @@ from .Helpers import can_move_in_direction, direction_to_new_position
 class BenioPacmanFunctionValueApproximation(Pacman):
 
     FILENAME = 'weights.txt'
-    ALPHA = 0.001
-    DISCOUNT = 0.5
-    EPSILON = 0.25
     WEIGHTS = np.array([
-        -1.104652831222984743e-01,
-        1.924716765878314037e-03,
-        7.922479606183904788e-02,
-        2.136582696509965740e-02,
-        -5.143322709876805426e-02,
-        6.943267191134847027e-03,
-        1.080349504814373529e-01,
-        2.987511579494379552e-03
+        -3.998075444224211822e-02,
+        5.767725387831480061e-04,
+        3.803931876970317177e-02,
+        3.232015249357537978e-02,
+        0.000000000000000000e+00,
+        1.378780716908671079e-02,
+        8.394530077257136846e-02,
+        0.000000000000000000e+00
     ])
 
-    def __init__(self, train=False, use_predefined_weights=True):
+    def __init__(self, train=False, use_predefined_weights=True, alpha = 0.001, discount = 0.5, epsilon = 0.25):
         super().__init__()
         self.train = train
+        self.alpha = alpha
+        self.discount = discount
+        self.epsilon = epsilon
         self.use_predefined_weights = use_predefined_weights
+
         self.__weights = self.WEIGHTS if use_predefined_weights else self.__load_weights()
         self.__game_states_history = []
         self.__actions_history = []
 
     def make_move(self, game_state, invalid_move=False) -> Direction:
-        epsilon = self.EPSILON if self.train else 0
+        epsilon = self.epsilon if self.train else 0
         should_random = random.random() < epsilon
 
         if invalid_move:
@@ -76,19 +77,19 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         np.savetxt(self.FILENAME, self.__weights)
 
     def __update(self, reward):
-        state = self.__game_states_history[-2] if len(self.__game_states_history) > 1 else None
-        next_state = self.__game_states_history[-1] if len(self.__game_states_history) > 0 else None
+        prev_state = self.__game_states_history[-2] if len(self.__game_states_history) > 1 else None
+        state = self.__game_states_history[-1] if len(self.__game_states_history) > 0 else None
         action = self.__actions_history[-1] if len(self.__actions_history) > 0 else None
-        if state is None or next_state is None or not self.train:
+        if prev_state is None or state is None or not self.train:
             return
 
-        distances_and_nearest = self.__get_distances_and_nearest(state, action)
+        distances_and_nearest = self.__get_distances_and_nearest(prev_state, action)
 
         if self.__weights is None:
             self.__weights = np.zeros((len(distances_and_nearest),))
 
-        delta = (reward + self.DISCOUNT * self.__get_value(next_state)) - self.__get_qvalue(state, action)
-        self.__weights += self.ALPHA * delta * distances_and_nearest
+        delta = (reward + self.discount * self.__get_value(state)) - self.__get_qvalue(prev_state, action)
+        self.__weights += self.alpha * delta * distances_and_nearest
 
     def __get_best_action(self, game_state) -> Direction:
         legal_actions = self.__get_legal_actions(game_state)
@@ -109,7 +110,7 @@ class BenioPacmanFunctionValueApproximation(Pacman):
 
         return directions
 
-    def __get_value(self, game_state):
+    def __get_value(self, game_state) -> float:
         possible_actions = self.__get_legal_actions(game_state)
 
         if len(possible_actions) == 0:
@@ -159,9 +160,9 @@ class BenioPacmanFunctionValueApproximation(Pacman):
             return 0
 
         distance = self.__get_distance_to_nearest(game_state.you['position'], eatable_positions)
-        max_distance = 10
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+
+        distance = min(10, distance) / 10
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_nearest_ghost_distance(self, game_state):
@@ -174,9 +175,9 @@ class BenioPacmanFunctionValueApproximation(Pacman):
             return 0
 
         distance = self.__get_distance_to_nearest(game_state.you['position'], ghost_positions)
-        max_distance = 5
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+
+        distance = min(5, distance) / 5
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_nearest_player_distance(self, game_state):
@@ -189,9 +190,9 @@ class BenioPacmanFunctionValueApproximation(Pacman):
             return 0
 
         distance = self.__get_distance_to_nearest(game_state.you['position'], players_positions)
-        max_distance = 5
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+
+        distance = min(5, distance) / 5
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_double_point_distance(self, game_state):
@@ -203,9 +204,8 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         if distance is None:
             return 0
 
-        max_distance = 15
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+        distance = min(15, distance) / 15
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_indestructible_distance(self, game_state):
@@ -217,9 +217,8 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         if distance is None:
             return 0
 
-        max_distance = 15
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+        distance = min(15, distance) / 15
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_big_points_distance(self, game_state):
@@ -227,9 +226,8 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         if distance is None:
             return 0
 
-        max_distance = 15
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+        distance = min(15, distance) / 15
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_big_big_points_distance(self, game_state):
@@ -237,9 +235,8 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         if distance is None:
             return 0
 
-        max_distance = 15
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+        distance = min(15, distance) / 15
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_point_distance(self, game_state):
@@ -247,9 +244,8 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         if distance is None:
             return 0
 
-        max_distance = 4
-        norm_distance = min(max_distance, distance) / max_distance
-        rev_distance = 1 - norm_distance
+        distance = min(4, distance) / 4
+        rev_distance = 1 - distance
         return rev_distance
 
     def __get_state_after_action(self, game_state, action):
@@ -263,7 +259,7 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         new_game_state = dataclasses.replace(game_state, you=new_you)
         return new_game_state
 
-    def __get_distance_to_nearest(self, start_point, end_points) -> int:
+    def __get_distance_to_nearest(self, start_point, end_points) -> int | None:
         if len(end_points) == 0:
             return None
         distances = []

@@ -58,7 +58,7 @@ board_big = ["wwwwwwwwwwwwwwwwwwwwwwwwwwww",
 
 GHOSTS = [Ghosts.RED, Ghosts.PINK, Ghosts.BLUE, Ghosts.ORANGE]
 
-def test(n_games=10):
+def test(n_games=30):
     stats = {}
     pacmans = [
         BenioPacmanFunctionValueApproximation(train=True, use_predefined_weights=False),
