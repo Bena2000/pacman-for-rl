@@ -13,15 +13,26 @@ from .Helpers import can_move_in_direction, direction_to_new_position
 class BenioPacmanFunctionValueApproximation(Pacman):
 
     FILENAME = 'weights.txt'
-    WEIGHTS = np.array([
-        -3.998075444224211822e-02,
-        5.767725387831480061e-04,
-        3.803931876970317177e-02,
-        3.232015249357537978e-02,
-        0.000000000000000000e+00,
-        1.378780716908671079e-02,
-        8.394530077257136846e-02,
-        0.000000000000000000e+00
+    # WEIGHTS = np.array([
+    #     -3.998075444224211822e-02,
+    #     5.767725387831480061e-04,
+    #     3.803931876970317177e-02,
+    #     3.232015249357537978e-02,
+    #     0.000000000000000000e+00,
+    #     1.378780716908671079e-02,
+    #     8.394530077257136846e-02,
+    #     0.000000000000000000e+00
+    # ])
+    WEIGHTS = np.array(
+    [
+        -1.104652831222984743e-01,
+        1.924716765878314037e-03,
+        7.922479606183904788e-02,
+        2.136582696509965740e-02,
+        - 5.143322709876805426e-02,
+        6.943267191134847027e-03,
+        1.080349504814373529e-01,
+        2.987511579494379552e-03
     ])
 
     def __init__(self, train=False, use_predefined_weights=True, alpha = 0.001, discount = 0.5, epsilon = 0.25):
@@ -88,7 +99,9 @@ class BenioPacmanFunctionValueApproximation(Pacman):
         if self.__weights is None:
             self.__weights = np.zeros((len(distances_and_nearest),))
 
+        # błąd tymczasowy
         delta = (reward + self.discount * self.__get_value(state)) - self.__get_qvalue(prev_state, action)
+        # aktualizacja wag
         self.__weights += self.alpha * delta * distances_and_nearest
 
     def __get_best_action(self, game_state) -> Direction:
